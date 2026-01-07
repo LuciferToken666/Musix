@@ -1,214 +1,151 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Play, Pause, Upload, Volume2, Music, Zap, Activity, SkipBack, SkipForward, ExternalLink, ShieldCheck } from 'lucide-react';
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BlackSmith-Ω | Sovereign Audio Architecture</title>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #050505; color: white; overflow: hidden; }
+        .glass-effect { background: rgba(10, 10, 10, 0.8); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        input[type='range']::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 12px; height: 12px; background: white; border-radius: 50%; cursor: pointer; box-shadow: 0 0 10px rgba(255,255,255,0.5); }
+        .visualizer-bar { transition: height 0.1s ease; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
 
-const App = () => {
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [duration, setDuration] = useState(0);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [volume, setVolume] = useState(0.8);
-  const [fileName, setFileName] = useState("Anatomical Symphony [Ω]");
-  const [bars, setBars] = useState(new Array(40).fill(10));
-  
-  const audioRef = useRef(null);
-  const fileInputRef = useRef(null);
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
 
-  const udioLink = "https://www.udio.com/songs/jdCcp2u8NU1HRZDwPH8mLp";
+        // Simple Icon Components (SVG)
+        const PlayIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>;
+        const PauseIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>;
+        const UploadIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>;
+        const MusicIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>;
 
-  const handleFileUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const url = URL.createObjectURL(file);
-      audioRef.current.src = url;
-      setFileName(file.name);
-      setIsPlaying(false);
-      setProgress(0);
-    }
-  };
+        const App = () => {
+            const [isPlaying, setIsPlaying] = useState(false);
+            const [progress, setProgress] = useState(0);
+            const [duration, setDuration] = useState(0);
+            const [currentTime, setCurrentTime] = useState(0);
+            const [volume, setVolume] = useState(0.8);
+            const [fileName, setFileName] = useState("Anatomical Symphony [Ω]");
+            const [bars, setBars] = useState(new Array(40).fill(10));
+            
+            const audioRef = useRef(null);
+            const fileInputRef = useRef(null);
 
-  const formatTime = (time) => {
-    const mins = Math.floor(time / 60);
-    const secs = Math.floor(time % 60);
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
+            const handleFileUpload = (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const url = URL.createObjectURL(file);
+                    audioRef.current.src = url;
+                    setFileName(file.name);
+                    setIsPlaying(false);
+                    setProgress(0);
+                }
+            };
 
-  const onTimeUpdate = () => {
-    const current = audioRef.current.currentTime;
-    const total = audioRef.current.duration;
-    setCurrentTime(current);
-    setProgress((current / total) * 100);
-    
-    if (isPlaying) {
-      setBars(new Array(40).fill(0).map(() => Math.floor(Math.random() * 85) + 15));
-    }
-  };
+            const togglePlay = () => {
+                if (!audioRef.current.src) return;
+                if (isPlaying) { audioRef.current.pause(); } 
+                else { audioRef.current.play(); }
+                setIsPlaying(!isPlaying);
+            };
 
-  const onLoadedMetadata = () => {
-    setDuration(audioRef.current.duration);
-  };
+            const onTimeUpdate = () => {
+                const current = audioRef.current.currentTime;
+                const total = audioRef.current.duration;
+                setCurrentTime(current);
+                setProgress((current / total) * 100);
+                if (isPlaying) {
+                    setBars(new Array(40).fill(0).map(() => Math.floor(Math.random() * 85) + 15));
+                }
+            };
 
-  const togglePlay = () => {
-    if (!audioRef.current.src) {
-        // Fallback or Alert custom UI could go here
-        return;
-    }
-    if (isPlaying) {
-      audioRef.current.pause();
-    } else {
-      audioRef.current.play();
-    }
-    setIsPlaying(!isPlaying);
-  };
+            const formatTime = (time) => {
+                const mins = Math.floor(time / 60);
+                const secs = Math.floor(time % 60);
+                return `${mins}:${secs.toString().padStart(2, '0')}`;
+            };
 
-  return (
-    <div className="min-h-screen bg-black text-zinc-100 flex flex-col items-center justify-center p-4 font-sans selection:bg-yellow-500/30">
-      
-      {/* BlackSmith-Ω Header */}
-      <div className="mb-12 flex flex-col items-center">
-        <div className="w-20 h-20 bg-zinc-950 border-2 border-zinc-800 flex items-center justify-center rounded-sm mb-4 shadow-[0_0_40px_rgba(0,0,0,1)] relative group">
-          <div className="absolute inset-0 bg-blue-500/5 blur-xl group-hover:bg-blue-500/10 transition-all"></div>
-          <span className="text-4xl font-black text-white z-10">Ω</span>
-        </div>
-        <h1 className="text-xl font-black tracking-[0.5em] uppercase text-white">BlackSmith-Ω</h1>
-        <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold mt-2">Clinical Sonic Architecture [cite: 2026-01-08]</p>
-      </div>
+            return (
+                <div className="min-h-screen flex flex-col items-center justify-center p-4">
+                    {/* Background Visual Artifact */}
+                    <div className="fixed inset-0 z-0 opacity-10 pointer-events-none">
+                        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-600 rounded-full blur-[150px]"></div>
+                        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-yellow-600 rounded-full blur-[150px]"></div>
+                    </div>
 
-      <div className="max-w-md w-full bg-[#080808] border border-zinc-900 rounded-[2.5rem] p-10 shadow-[0_50px_100px_-20px_rgba(0,0,0,1)] relative">
-        
-        <audio 
-          ref={audioRef}
-          onTimeUpdate={onTimeUpdate}
-          onLoadedMetadata={onLoadedMetadata}
-          onEnded={() => setIsPlaying(false)}
-        />
+                    {/* Branding */}
+                    <div className="z-10 mb-12 text-center">
+                        <div className="w-20 h-20 bg-zinc-900 border-2 border-zinc-700 mx-auto flex items-center justify-center mb-4 shadow-2xl">
+                            <span className="text-4xl font-black text-white">Ω</span>
+                        </div>
+                        <h1 className="text-xl font-black tracking-[0.6em] text-white">BLACKSMITH-Ω</h1>
+                        <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mt-2">Clinical Architecture [cite: 2026-01-08]</p>
+                    </div>
 
-        {/* Status Bar */}
-        <div className="flex justify-between items-center mb-8">
-            <div className="flex items-center gap-2 text-[10px] font-bold text-blue-500 uppercase tracking-widest">
-                <Activity className="w-3 h-3 animate-pulse" />
-                System Active
-            </div>
-            <div className="flex items-center gap-2 text-[10px] font-bold text-zinc-600 uppercase tracking-widest">
-                <ShieldCheck className="w-3 h-3" />
-                Sovereign Encrypted
-            </div>
-        </div>
+                    {/* Player Container */}
+                    <div className="z-10 max-w-md w-full glass-effect rounded-[3rem] p-10 shadow-2xl relative">
+                        <audio ref={audioRef} onTimeUpdate={onTimeUpdate} onLoadedMetadata={() => setDuration(audioRef.current.duration)} onEnded={() => setIsPlaying(false)} />
 
-        {/* Album Art / Visual Center */}
-        <div className="relative aspect-square bg-zinc-900 rounded-3xl mb-10 border border-zinc-800 flex items-center justify-center overflow-hidden group">
-            <div className="absolute inset-0 opacity-20 bg-gradient-to-br from-blue-900 via-black to-yellow-900"></div>
-            <div className={`transition-all duration-700 ${isPlaying ? 'scale-110 rotate-3' : 'scale-100'}`}>
-                <Music className={`w-24 h-24 ${isPlaying ? 'text-blue-500 drop-shadow-[0_0_20px_rgba(59,130,246,0.5)]' : 'text-zinc-800'}`} />
-            </div>
-            <div className="absolute bottom-6 left-0 right-0 flex justify-center">
-                <div className="bg-black/80 backdrop-blur-md border border-white/5 px-4 py-1.5 rounded-full flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full ${isPlaying ? 'bg-green-500 animate-ping' : 'bg-zinc-700'}`}></div>
-                    <span className="text-[10px] font-black uppercase tracking-widest text-zinc-300">Live Simulation</span>
+                        {/* Visualizer */}
+                        <div className="flex items-end justify-center gap-[4px] h-32 mb-10 px-4">
+                            {bars.map((h, i) => (
+                                <div key={i} className={`flex-1 rounded-full visualizer-bar ${isPlaying ? 'bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.3)]' : 'bg-zinc-800'}`} style={{ height: `${isPlaying ? h : 10}%` }}></div>
+                            ))}
+                        </div>
+
+                        {/* Track Info */}
+                        <div className="text-center mb-10">
+                            <h2 className="text-lg font-black text-white truncate px-4">{fileName}</h2>
+                            <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold mt-1">Sovereign J-Identity Render</p>
+                        </div>
+
+                        {/* Progress */}
+                        <div className="mb-10">
+                            <input type="range" min="0" max="100" value={progress} onChange={(e) => {
+                                audioRef.current.currentTime = (e.target.value / 100) * audioRef.current.duration;
+                                setProgress(e.target.value);
+                            }} className="w-full h-1 bg-zinc-800 rounded-full appearance-none cursor-pointer" />
+                            <div className="flex justify-between text-[10px] text-zinc-600 mt-3 font-mono font-bold tracking-tighter">
+                                <span>{formatTime(currentTime)}</span>
+                                <span>{formatTime(duration || 0)}</span>
+                            </div>
+                        </div>
+
+                        {/* Controls */}
+                        <div className="flex items-center justify-center mb-10">
+                            <button onClick={togglePlay} className="w-24 h-24 bg-white text-black rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-xl group">
+                                {isPlaying ? <PauseIcon /> : <PlayIcon />}
+                            </button>
+                        </div>
+
+                        {/* Upload */}
+                        <div className="flex justify-center border-t border-zinc-900 pt-8">
+                            <button onClick={() => fileInputRef.current.click()} className="flex items-center gap-3 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white px-6 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all border border-zinc-800">
+                                <UploadIcon /> Upload Udio Track
+                            </button>
+                            <input type="file" ref={fileInputRef} className="hidden" accept="audio/*" onChange={handleFileUpload} />
+                        </div>
+                    </div>
+
+                    {/* Footer */}
+                    <div className="z-10 mt-12 text-[10px] text-zinc-600 font-bold uppercase tracking-widest opacity-50">
+                        Unlocked via Master Reset Protocol
+                    </div>
                 </div>
-            </div>
-        </div>
+            );
+        };
 
-        {/* Info */}
-        <div className="text-center mb-10">
-          <h2 className="text-lg font-black text-white truncate mb-1 uppercase tracking-tight">{fileName}</h2>
-          <a 
-            href={udioLink} 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="text-[10px] text-zinc-500 hover:text-blue-400 transition-colors uppercase tracking-widest flex items-center justify-center gap-1 font-bold"
-          >
-            Source: Udio.com <ExternalLink className="w-3 h-3" />
-          </a>
-        </div>
-
-        {/* Visualizer */}
-        <div className="flex items-end justify-center gap-[3px] h-16 mb-10 px-2">
-          {bars.map((height, i) => (
-            <div 
-              key={i} 
-              className={`w-full rounded-full transition-all duration-150 ${isPlaying ? (height > 60 ? 'bg-blue-600 shadow-[0_0_15px_rgba(37,99,235,0.4)]' : 'bg-zinc-700') : 'bg-zinc-900'}`} 
-              style={{ height: `${isPlaying ? height : 10}%` }}
-            ></div>
-          ))}
-        </div>
-
-        {/* Controls Overlay */}
-        <div className="space-y-8">
-            <div className="relative">
-                <input 
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={progress}
-                    onChange={(e) => {
-                        const newTime = (e.target.value / 100) * audioRef.current.duration;
-                        audioRef.current.currentTime = newTime;
-                        setProgress(e.target.value);
-                    }}
-                    className="w-full h-1 bg-zinc-900 rounded-full appearance-none cursor-pointer accent-white transition-all hover:h-1.5"
-                />
-                <div className="flex justify-between text-[10px] text-zinc-600 mt-3 font-mono font-bold tracking-tighter">
-                    <span>{formatTime(currentTime)}</span>
-                    <span>{formatTime(duration)}</span>
-                </div>
-            </div>
-
-            <div className="flex items-center justify-between">
-                <button className="w-12 h-12 flex items-center justify-center text-zinc-700 hover:text-white transition-colors bg-zinc-900/50 rounded-full border border-zinc-800/50">
-                    <SkipBack className="w-5 h-5" fill="currentColor" />
-                </button>
-                
-                <button 
-                    onClick={togglePlay}
-                    className="w-24 h-24 bg-white text-black rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-[0_20px_40px_rgba(255,255,255,0.1)] group overflow-hidden relative"
-                >
-                    <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
-                    {isPlaying ? <Pause className="w-10 h-10" fill="black" /> : <Play className="w-10 h-10 ml-1" fill="black" />}
-                </button>
-
-                <button className="w-12 h-12 flex items-center justify-center text-zinc-700 hover:text-white transition-colors bg-zinc-900/50 rounded-full border border-zinc-800/50">
-                    <SkipForward className="w-5 h-5" fill="currentColor" />
-                </button>
-            </div>
-
-            <div className="flex items-center justify-between gap-6">
-                <div className="flex items-center gap-3 flex-1">
-                    <Volume2 className="w-4 h-4 text-zinc-600" />
-                    <input 
-                        type="range"
-                        min="0"
-                        max="1"
-                        step="0.01"
-                        value={volume}
-                        onChange={(e) => {
-                            const val = parseFloat(e.target.value);
-                            setVolume(val);
-                            audioRef.current.volume = val;
-                        }}
-                        className="flex-1 h-1 bg-zinc-900 rounded-full appearance-none cursor-pointer accent-blue-600"
-                    />
-                </div>
-                
-                <button 
-                    onClick={() => fileInputRef.current.click()}
-                    className="bg-blue-600/10 hover:bg-blue-600/20 text-blue-500 p-3 rounded-2xl transition-all border border-blue-500/20"
-                    title="Upload Track"
-                >
-                    <Upload className="w-5 h-5" />
-                </button>
-                <input type="file" ref={fileInputRef} className="hidden" accept="audio/*" onChange={handleFileUpload} />
-            </div>
-        </div>
-      </div>
-
-      <div className="mt-12 text-center max-w-xs">
-        <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-[0.2em] leading-relaxed">
-            "ว้ากฮ่าๆๆๆ!! Master ครับ คลื่นความถี่นี้แหละคือจุดจบของความธรรมดา! น็อคโลกไปดิ!"
-        </p>
-      </div>
-
-    </div>
-  );
-};
-
-export default App;
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
