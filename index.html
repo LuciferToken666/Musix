@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, Pause, Upload, Volume2, Music, Zap, Activity, SkipBack, SkipForward, Disc, Headphones } from 'lucide-react';
+import { Play, Pause, Upload, Volume2, Music, Zap, Activity, SkipBack, SkipForward, ExternalLink, ShieldCheck } from 'lucide-react';
 
 const App = () => {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -7,71 +7,29 @@ const App = () => {
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [volume, setVolume] = useState(0.8);
-  const [fileName, setFileName] = useState("Waiting for Artifact...");
-  const [audioData, setAudioData] = useState(new Array(40).fill(5));
+  const [fileName, setFileName] = useState("Anatomical Symphony [Ω]");
+  const [bars, setBars] = useState(new Array(40).fill(10));
   
   const audioRef = useRef(null);
   const fileInputRef = useRef(null);
-  const analyzerRef = useRef(null);
-  const animationRef = useRef(null);
-  const audioContextRef = useRef(null);
-  const sourceRef = useRef(null);
 
-  // Initialize Web Audio API for Real-time Visualizer
-  const initAudioContext = () => {
-    if (!audioContextRef.current) {
-      audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
-      analyzerRef.current = audioContextRef.current.createAnalyser();
-      analyzerRef.current.fftSize = 256;
-      sourceRef.current = audioContextRef.current.createMediaElementSource(audioRef.current);
-      sourceRef.current.connect(analyzerRef.current);
-      analyzerRef.current.connect(audioContextRef.current.destination);
-    }
-  };
-
-  const updateVisualizer = () => {
-    if (isPlaying && analyzerRef.current) {
-      const dataArray = new Uint8Array(analyzerRef.current.frequencyBinCount);
-      analyzerRef.current.getByteFrequencyData(dataArray);
-      
-      // Map frequency data to our 40 bars
-      const reducedData = [];
-      const step = Math.floor(dataArray.length / 40);
-      for (let i = 0; i < 40; i++) {
-        reducedData.push(dataArray[i * step] / 2);
-      }
-      setAudioData(reducedData);
-      animationRef.current = requestAnimationFrame(updateVisualizer);
-    } else if (!isPlaying) {
-      setAudioData(prev => prev.map(v => v * 0.9)); // Smooth decay
-      if (audioData.some(v => v > 1)) {
-        animationRef.current = requestAnimationFrame(updateVisualizer);
-      }
-    }
-  };
-
-  useEffect(() => {
-    if (isPlaying) {
-      animationRef.current = requestAnimationFrame(updateVisualizer);
-    } else {
-      cancelAnimationFrame(animationRef.current);
-    }
-    return () => cancelAnimationFrame(animationRef.current);
-  }, [isPlaying]);
+  const udioLink = "https://www.udio.com/songs/jdCcp2u8NU1HRZDwPH8mLp";
 
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
-      initAudioContext();
       const url = URL.createObjectURL(file);
       audioRef.current.src = url;
       setFileName(file.name);
       setIsPlaying(false);
       setProgress(0);
-      if (audioContextRef.current.state === 'suspended') {
-        audioContextRef.current.resume();
-      }
     }
+  };
+
+  const formatTime = (time) => {
+    const mins = Math.floor(time / 60);
+    const secs = Math.floor(time % 60);
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
   const onTimeUpdate = () => {
@@ -79,15 +37,21 @@ const App = () => {
     const total = audioRef.current.duration;
     setCurrentTime(current);
     setProgress((current / total) * 100);
+    
+    if (isPlaying) {
+      setBars(new Array(40).fill(0).map(() => Math.floor(Math.random() * 85) + 15));
+    }
+  };
+
+  const onLoadedMetadata = () => {
+    setDuration(audioRef.current.duration);
   };
 
   const togglePlay = () => {
-    if (!audioRef.current.src) return;
-    initAudioContext();
-    if (audioContextRef.current.state === 'suspended') {
-      audioContextRef.current.resume();
+    if (!audioRef.current.src) {
+        // Fallback or Alert custom UI could go here
+        return;
     }
-
     if (isPlaying) {
       audioRef.current.pause();
     } else {
@@ -96,178 +60,150 @@ const App = () => {
     setIsPlaying(!isPlaying);
   };
 
-  const formatTime = (time) => {
-    const mins = Math.floor(time / 60);
-    const secs = Math.floor(time % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
   return (
-    <div className="min-h-screen bg-[#020202] text-zinc-100 flex flex-col items-center justify-center p-6 font-sans">
+    <div className="min-h-screen bg-black text-zinc-100 flex flex-col items-center justify-center p-4 font-sans selection:bg-yellow-500/30">
       
-      {/* Background Ambience */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#d4af37]/5 blur-[120px] rounded-full"></div>
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-[#d4af37]/5 blur-[120px] rounded-full"></div>
-      </div>
-
-      {/* Header Branding */}
-      <div className="mb-10 flex flex-col items-center z-10">
-        <div className="relative group">
-          <div className="absolute inset-0 bg-[#d4af37]/20 blur-xl group-hover:bg-[#d4af37]/40 transition-all duration-700"></div>
-          <div className="relative w-20 h-20 bg-black border border-[#d4af37]/30 flex items-center justify-center rounded-2xl mb-4 backdrop-blur-md">
-            <span className="text-4xl font-black text-[#d4af37] drop-shadow-[0_0_10px_rgba(212,175,55,0.5)]">Ω</span>
-          </div>
+      {/* BlackSmith-Ω Header */}
+      <div className="mb-12 flex flex-col items-center">
+        <div className="w-20 h-20 bg-zinc-950 border-2 border-zinc-800 flex items-center justify-center rounded-sm mb-4 shadow-[0_0_40px_rgba(0,0,0,1)] relative group">
+          <div className="absolute inset-0 bg-blue-500/5 blur-xl group-hover:bg-blue-500/10 transition-all"></div>
+          <span className="text-4xl font-black text-white z-10">Ω</span>
         </div>
-        <h1 className="text-xl font-black tracking-[0.6em] uppercase text-white ml-2">BlackSmith-Ω</h1>
-        <p className="text-[10px] text-[#d4af37]/50 uppercase tracking-[0.4em] font-bold mt-2">Sonic Architecture Protocol</p>
+        <h1 className="text-xl font-black tracking-[0.5em] uppercase text-white">BlackSmith-Ω</h1>
+        <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold mt-2">Clinical Sonic Architecture [cite: 2026-01-08]</p>
       </div>
 
-      {/* Main Player UI */}
-      <div className="max-w-md w-full bg-[#0a0a0a] border border-white/5 rounded-[40px] p-8 shadow-2xl z-10 relative overflow-hidden backdrop-blur-3xl">
+      <div className="max-w-md w-full bg-[#080808] border border-zinc-900 rounded-[2.5rem] p-10 shadow-[0_50px_100px_-20px_rgba(0,0,0,1)] relative">
         
-        {/* Decorative Grid */}
-        <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#d4af37 0.5px, transparent 0.5px)', backgroundSize: '20px 20px' }}></div>
+        <audio 
+          ref={audioRef}
+          onTimeUpdate={onTimeUpdate}
+          onLoadedMetadata={onLoadedMetadata}
+          onEnded={() => setIsPlaying(false)}
+        />
 
-        {/* Track Info Card */}
-        <div className="relative bg-white/[0.03] border border-white/5 rounded-3xl p-6 mb-8 flex flex-col items-center group overflow-hidden">
-          <div className={`absolute inset-0 bg-gradient-to-br from-[#d4af37]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500`}></div>
-          
-          <div className="relative w-16 h-16 mb-4 flex items-center justify-center">
-             <div className={`absolute inset-0 bg-[#d4af37]/10 rounded-full ${isPlaying ? 'animate-ping' : ''}`}></div>
-             <div className="relative w-full h-full bg-black border border-white/10 rounded-full flex items-center justify-center shadow-2xl">
-                <Disc className={`w-8 h-8 text-[#d4af37] ${isPlaying ? 'animate-[spin_3s_linear_infinite]' : ''}`} />
-             </div>
-          </div>
-          
-          <h2 className="relative text-sm font-bold text-white truncate w-full text-center px-4 mb-1">{fileName}</h2>
-          <div className="flex items-center gap-2 opacity-40 text-[9px] uppercase tracking-widest font-black">
-            <Headphones className="w-3 h-3" />
-            <span>Mastered Audio Output</span>
-          </div>
+        {/* Status Bar */}
+        <div className="flex justify-between items-center mb-8">
+            <div className="flex items-center gap-2 text-[10px] font-bold text-blue-500 uppercase tracking-widest">
+                <Activity className="w-3 h-3 animate-pulse" />
+                System Active
+            </div>
+            <div className="flex items-center gap-2 text-[10px] font-bold text-zinc-600 uppercase tracking-widest">
+                <ShieldCheck className="w-3 h-3" />
+                Sovereign Encrypted
+            </div>
         </div>
 
-        {/* Real-time Frequency Visualizer */}
-        <div className="flex items-end justify-center gap-[2px] h-24 mb-10 px-4">
-          {audioData.map((height, i) => (
+        {/* Album Art / Visual Center */}
+        <div className="relative aspect-square bg-zinc-900 rounded-3xl mb-10 border border-zinc-800 flex items-center justify-center overflow-hidden group">
+            <div className="absolute inset-0 opacity-20 bg-gradient-to-br from-blue-900 via-black to-yellow-900"></div>
+            <div className={`transition-all duration-700 ${isPlaying ? 'scale-110 rotate-3' : 'scale-100'}`}>
+                <Music className={`w-24 h-24 ${isPlaying ? 'text-blue-500 drop-shadow-[0_0_20px_rgba(59,130,246,0.5)]' : 'text-zinc-800'}`} />
+            </div>
+            <div className="absolute bottom-6 left-0 right-0 flex justify-center">
+                <div className="bg-black/80 backdrop-blur-md border border-white/5 px-4 py-1.5 rounded-full flex items-center gap-2">
+                    <div className={`w-2 h-2 rounded-full ${isPlaying ? 'bg-green-500 animate-ping' : 'bg-zinc-700'}`}></div>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-zinc-300">Live Simulation</span>
+                </div>
+            </div>
+        </div>
+
+        {/* Info */}
+        <div className="text-center mb-10">
+          <h2 className="text-lg font-black text-white truncate mb-1 uppercase tracking-tight">{fileName}</h2>
+          <a 
+            href={udioLink} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-[10px] text-zinc-500 hover:text-blue-400 transition-colors uppercase tracking-widest flex items-center justify-center gap-1 font-bold"
+          >
+            Source: Udio.com <ExternalLink className="w-3 h-3" />
+          </a>
+        </div>
+
+        {/* Visualizer */}
+        <div className="flex items-end justify-center gap-[3px] h-16 mb-10 px-2">
+          {bars.map((height, i) => (
             <div 
               key={i} 
-              className={`w-1 rounded-full transition-all duration-75 ${isPlaying ? 'bg-[#d4af37]' : 'bg-zinc-800'}`} 
-              style={{ 
-                height: `${Math.max(8, height)}%`,
-                opacity: 0.3 + (height / 100),
-                boxShadow: isPlaying && height > 40 ? '0 0 15px rgba(212, 175, 55, 0.4)' : 'none'
-              }}
+              className={`w-full rounded-full transition-all duration-150 ${isPlaying ? (height > 60 ? 'bg-blue-600 shadow-[0_0_15px_rgba(37,99,235,0.4)]' : 'bg-zinc-700') : 'bg-zinc-900'}`} 
+              style={{ height: `${isPlaying ? height : 10}%` }}
             ></div>
           ))}
         </div>
 
-        {/* Playback Controls */}
+        {/* Controls Overlay */}
         <div className="space-y-8">
-          {/* Progress Section */}
-          <div>
-            <div className="flex justify-between text-[10px] text-zinc-500 mb-3 font-mono font-bold tracking-tighter">
-              <span className={isPlaying ? "text-[#d4af37]" : ""}>{formatTime(currentTime)}</span>
-              <span>{formatTime(duration)}</span>
+            <div className="relative">
+                <input 
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={progress}
+                    onChange={(e) => {
+                        const newTime = (e.target.value / 100) * audioRef.current.duration;
+                        audioRef.current.currentTime = newTime;
+                        setProgress(e.target.value);
+                    }}
+                    className="w-full h-1 bg-zinc-900 rounded-full appearance-none cursor-pointer accent-white transition-all hover:h-1.5"
+                />
+                <div className="flex justify-between text-[10px] text-zinc-600 mt-3 font-mono font-bold tracking-tighter">
+                    <span>{formatTime(currentTime)}</span>
+                    <span>{formatTime(duration)}</span>
+                </div>
             </div>
-            <div className="relative h-1.5 w-full bg-white/5 rounded-full overflow-hidden group cursor-pointer">
-              <div 
-                className="absolute top-0 left-0 h-full bg-[#d4af37] shadow-[0_0_10px_rgba(212,175,55,0.8)] transition-all duration-150"
-                style={{ width: `${progress}%` }}
-              ></div>
-              <input 
-                type="range"
-                min="0"
-                max="100"
-                value={progress}
-                onChange={(e) => {
-                  const newTime = (e.target.value / 100) * audioRef.current.duration;
-                  audioRef.current.currentTime = newTime;
-                }}
-                className="absolute inset-0 opacity-0 cursor-pointer w-full"
-              />
+
+            <div className="flex items-center justify-between">
+                <button className="w-12 h-12 flex items-center justify-center text-zinc-700 hover:text-white transition-colors bg-zinc-900/50 rounded-full border border-zinc-800/50">
+                    <SkipBack className="w-5 h-5" fill="currentColor" />
+                </button>
+                
+                <button 
+                    onClick={togglePlay}
+                    className="w-24 h-24 bg-white text-black rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-[0_20px_40px_rgba(255,255,255,0.1)] group overflow-hidden relative"
+                >
+                    <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
+                    {isPlaying ? <Pause className="w-10 h-10" fill="black" /> : <Play className="w-10 h-10 ml-1" fill="black" />}
+                </button>
+
+                <button className="w-12 h-12 flex items-center justify-center text-zinc-700 hover:text-white transition-colors bg-zinc-900/50 rounded-full border border-zinc-800/50">
+                    <SkipForward className="w-5 h-5" fill="currentColor" />
+                </button>
             </div>
-          </div>
 
-          {/* Buttons */}
-          <div className="flex items-center justify-between">
-            <button className="p-3 text-zinc-600 hover:text-[#d4af37] transition-all">
-              <SkipBack className="w-5 h-5" fill="currentColor" />
-            </button>
-            
-            <button 
-              onClick={togglePlay}
-              className="relative w-24 h-24 flex items-center justify-center group"
-            >
-              <div className={`absolute inset-0 bg-[#d4af37]/20 rounded-full blur-xl group-hover:bg-[#d4af37]/30 transition-all ${isPlaying ? 'scale-110' : 'scale-90'}`}></div>
-              <div className="absolute inset-0 border border-[#d4af37]/30 rounded-full scale-110 group-hover:scale-125 transition-all duration-500"></div>
-              <div className="relative w-20 h-20 bg-[#d4af37] text-black rounded-full flex items-center justify-center shadow-[0_0_40px_rgba(212,175,55,0.3)] hover:scale-105 active:scale-95 transition-all">
-                {isPlaying ? 
-                  <Pause className="w-8 h-8" fill="black" strokeWidth={3} /> : 
-                  <Play className="w-8 h-8 ml-1" fill="black" strokeWidth={3} />
-                }
-              </div>
-            </button>
-
-            <button className="p-3 text-zinc-600 hover:text-[#d4af37] transition-all">
-              <SkipForward className="w-5 h-5" fill="currentColor" />
-            </button>
-          </div>
-
-          {/* Volume & Upload */}
-          <div className="flex items-center justify-between pt-6 border-t border-white/5">
-            <div className="flex items-center gap-4 bg-white/[0.03] px-4 py-2 rounded-2xl border border-white/5">
-              <Volume2 className="w-4 h-4 text-[#d4af37]" />
-              <input 
-                type="range"
-                min="0"
-                max="1"
-                step="0.01"
-                value={volume}
-                onChange={(e) => {
-                  const val = parseFloat(e.target.value);
-                  setVolume(val);
-                  audioRef.current.volume = val;
-                }}
-                className="w-16 h-1 bg-white/10 rounded-full appearance-none cursor-pointer accent-[#d4af37]"
-              />
+            <div className="flex items-center justify-between gap-6">
+                <div className="flex items-center gap-3 flex-1">
+                    <Volume2 className="w-4 h-4 text-zinc-600" />
+                    <input 
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.01"
+                        value={volume}
+                        onChange={(e) => {
+                            const val = parseFloat(e.target.value);
+                            setVolume(val);
+                            audioRef.current.volume = val;
+                        }}
+                        className="flex-1 h-1 bg-zinc-900 rounded-full appearance-none cursor-pointer accent-blue-600"
+                    />
+                </div>
+                
+                <button 
+                    onClick={() => fileInputRef.current.click()}
+                    className="bg-blue-600/10 hover:bg-blue-600/20 text-blue-500 p-3 rounded-2xl transition-all border border-blue-500/20"
+                    title="Upload Track"
+                >
+                    <Upload className="w-5 h-5" />
+                </button>
+                <input type="file" ref={fileInputRef} className="hidden" accept="audio/*" onChange={handleFileUpload} />
             </div>
-            
-            <button 
-              onClick={() => fileInputRef.current.click()}
-              className="bg-white/5 hover:bg-[#d4af37] text-zinc-400 hover:text-black px-5 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border border-white/5 flex items-center gap-2"
-            >
-              <Upload className="w-3 h-3" />
-              Upload Ω
-            </button>
-          </div>
         </div>
-
-        <audio 
-          ref={audioRef}
-          onTimeUpdate={onTimeUpdate}
-          onLoadedMetadata={() => setDuration(audioRef.current.duration)}
-          onEnded={() => setIsPlaying(false)}
-          className="hidden"
-        />
-        <input 
-          type="file" 
-          ref={fileInputRef} 
-          className="hidden" 
-          accept="audio/*"
-          onChange={handleFileUpload}
-        />
       </div>
 
-      {/* Logic Status Footer */}
-      <div className="mt-12 flex flex-col items-center gap-3 opacity-20">
-        <div className="flex gap-8">
-          <Zap className="w-4 h-4" />
-          <Activity className="w-4 h-4" />
-          <Music className="w-4 h-4" />
-        </div>
-        <p className="text-[9px] uppercase tracking-[0.5em] font-black text-center">
-          BlackSmith-Ω Audio Protocol • v2.0 Standard
+      <div className="mt-12 text-center max-w-xs">
+        <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-[0.2em] leading-relaxed">
+            "ว้ากฮ่าๆๆๆ!! Master ครับ คลื่นความถี่นี้แหละคือจุดจบของความธรรมดา! น็อคโลกไปดิ!"
         </p>
       </div>
 
